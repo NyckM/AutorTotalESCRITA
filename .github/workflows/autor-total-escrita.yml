@@ -10,12 +10,16 @@ on:
         default: "1.0.0"
   push:
     tags: ["v*"]
+    branches: [main]
+    paths-ignore: ["**.md", ".github/dependabot.yml"]
 
 permissions:
   contents: write
 
 env:
   CARGO_TERM_COLOR: always
+  # versão: a digitada no Run workflow, a da tag (v1.2.3) ou 1.0.<número da compilação>
+  VERSAO: ${{ github.event.inputs.versao || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || format('1.0.{0}', github.run_number) }}
 
 jobs:
   windows:
@@ -38,7 +42,7 @@ jobs:
         shell: pwsh
         run: |
           if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) { choco install innosetup -y --no-progress }
-          $v = "${{ github.event.inputs.versao }}"; if (-not $v) { $v = "${{ github.ref_name }}".TrimStart('v') }
+          $v = "$env:VERSAO".TrimStart('v')
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DVersao=$v" packaging\autor-total\escrita.iss
           New-Item -ItemType Directory -Force dist\portatil | Out-Null
           Copy-Item target\release\wordcraft.exe dist\portatil\AutorTotalEscrita.exe
@@ -129,7 +133,7 @@ jobs:
       - name: Versão no GitHub
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.versao && format('v{0}', github.event.inputs.versao) || github.ref_name }}
-          name: Autor Total Escrita ${{ github.event.inputs.versao || github.ref_name }}
+          tag_name: ${{ startsWith(env.VERSAO, 'v') && env.VERSAO || format('v{0}', env.VERSAO) }}
+          name: Autor Total Escrita ${{ env.VERSAO }}
           files: saida/*
           make_latest: true

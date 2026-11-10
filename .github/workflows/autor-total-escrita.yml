@@ -25,7 +25,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Traduções (português e outras)
         shell: bash
         run: |
@@ -48,7 +48,7 @@ jobs:
           Copy-Item target\release\wordcraft.exe dist\portatil\AutorTotalEscrita.exe
           Copy-Item NOTICE, LICENSE-MIT, LICENSE-APACHE dist\portatil\
           Compress-Archive dist\portatil\* dist\AutorTotalEscrita-Windows-portatil.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows
           path: |
@@ -58,7 +58,7 @@ jobs:
   mac:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Traduções
         run: |
           git clone --filter=blob:none https://github.com/storytold/craft-i18n.git craft-i18n
@@ -94,7 +94,7 @@ jobs:
           PLIST
           codesign --force --deep -s - "$APP"
           hdiutil create -volname "Autor Total Escrita" -srcfolder "$APP" -ov -format UDZO dist/AutorTotalEscrita-Mac.dmg
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mac
           path: dist/AutorTotalEscrita-Mac.dmg
@@ -102,7 +102,7 @@ jobs:
   linux:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Bibliotecas do sistema e traduções
         run: |
           sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev libgtk-3-dev libdbus-1-dev pkg-config
@@ -117,7 +117,7 @@ jobs:
           mkdir -p dist/autor-total-escrita && cp target/release/wordcraft dist/autor-total-escrita/autor-total-escrita
           cp NOTICE LICENSE-MIT LICENSE-APACHE assets/app-icon/wordcraft-1024.png dist/autor-total-escrita/
           tar -C dist -czf dist/AutorTotalEscrita-Linux.tar.gz autor-total-escrita
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux
           path: dist/AutorTotalEscrita-Linux.tar.gz
@@ -126,12 +126,12 @@ jobs:
     needs: [windows, mac, linux]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: saida
           merge-multiple: true
       - name: Versão no GitHub
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ startsWith(env.VERSAO, 'v') && env.VERSAO || format('v{0}', env.VERSAO) }}
           name: Autor Total Escrita ${{ env.VERSAO }}

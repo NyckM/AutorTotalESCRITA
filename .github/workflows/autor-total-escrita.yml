@@ -1,0 +1,135 @@
+# Autor Total Escrita: compila o instalador para Windows (e os pacotes para Mac e Linux) e publica uma versão.
+# Rode pela aba Actions › "Autor Total Escrita" › Run workflow (ou crie uma tag v1.0.0, v1.0.1…).
+name: Autor Total Escrita
+
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: "Número da versão (ex.: 1.0.0)"
+        default: "1.0.0"
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Traduções (português e outras)
+        shell: bash
+        run: |
+          git clone --filter=blob:none https://github.com/storytold/craft-i18n.git craft-i18n
+          git -C craft-i18n checkout "$(grep -o '[0-9a-f]\{40\}' craft-i18n.rev | head -1)"
+          echo "CRAFT_I18N_DIR=$GITHUB_WORKSPACE/craft-i18n" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Compilar
+        run: cargo build --release -p wordcraft
+        env:
+          WORDCRAFT_REQUIRE_WINRES: "1"
+      - name: Instalador
+        shell: pwsh
+        run: |
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) { choco install innosetup -y --no-progress }
+          $v = "${{ github.event.inputs.versao }}"; if (-not $v) { $v = "${{ github.ref_name }}".TrimStart('v') }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DVersao=$v" packaging\autor-total\escrita.iss
+          New-Item -ItemType Directory -Force dist\portatil | Out-Null
+          Copy-Item target\release\wordcraft.exe dist\portatil\AutorTotalEscrita.exe
+          Copy-Item NOTICE, LICENSE-MIT, LICENSE-APACHE dist\portatil\
+          Compress-Archive dist\portatil\* dist\AutorTotalEscrita-Windows-portatil.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/AutorTotalEscrita-Setup.exe
+            dist/AutorTotalEscrita-Windows-portatil.zip
+
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Traduções
+        run: |
+          git clone --filter=blob:none https://github.com/storytold/craft-i18n.git craft-i18n
+          git -C craft-i18n checkout "$(grep -o '[0-9a-f]\{40\}' craft-i18n.rev | head -1)"
+          echo "CRAFT_I18N_DIR=$GITHUB_WORKSPACE/craft-i18n" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - name: Compilar (Intel e Apple Silicon)
+        run: |
+          cargo build --release -p wordcraft --target aarch64-apple-darwin
+          cargo build --release -p wordcraft --target x86_64-apple-darwin
+      - name: App e .dmg
+        run: |
+          APP="dist/Autor Total Escrita.app"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          lipo -create target/aarch64-apple-darwin/release/wordcraft target/x86_64-apple-darwin/release/wordcraft -output "$APP/Contents/MacOS/AutorTotalEscrita"
+          cp assets/app-icon/wordcraft.icns "$APP/Contents/Resources/AppIcon.icns" || true
+          cat > "$APP/Contents/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>CFBundleName</key><string>Autor Total Escrita</string>
+          <key>CFBundleDisplayName</key><string>Autor Total Escrita</string>
+          <key>CFBundleIdentifier</key><string>br.com.autortotal.escrita</string>
+          <key>CFBundleExecutable</key><string>AutorTotalEscrita</string>
+          <key>CFBundleIconFile</key><string>AppIcon</string>
+          <key>CFBundlePackageType</key><string>APPL</string>
+          <key>CFBundleShortVersionString</key><string>1.0</string>
+          <key>NSHighResolutionCapable</key><true/>
+          <key>LSMinimumSystemVersion</key><string>11.0</string>
+          </dict></plist>
+          PLIST
+          codesign --force --deep -s - "$APP"
+          hdiutil create -volname "Autor Total Escrita" -srcfolder "$APP" -ov -format UDZO dist/AutorTotalEscrita-Mac.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: dist/AutorTotalEscrita-Mac.dmg
+
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bibliotecas do sistema e traduções
+        run: |
+          sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev libgtk-3-dev libdbus-1-dev pkg-config
+          git clone --filter=blob:none https://github.com/storytold/craft-i18n.git craft-i18n
+          git -C craft-i18n checkout "$(grep -o '[0-9a-f]\{40\}' craft-i18n.rev | head -1)"
+          echo "CRAFT_I18N_DIR=$GITHUB_WORKSPACE/craft-i18n" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release -p wordcraft
+      - name: Pacote
+        run: |
+          mkdir -p dist/autor-total-escrita && cp target/release/wordcraft dist/autor-total-escrita/autor-total-escrita
+          cp NOTICE LICENSE-MIT LICENSE-APACHE assets/app-icon/wordcraft-1024.png dist/autor-total-escrita/
+          tar -C dist -czf dist/AutorTotalEscrita-Linux.tar.gz autor-total-escrita
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/AutorTotalEscrita-Linux.tar.gz
+
+  publicar:
+    needs: [windows, mac, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: saida
+          merge-multiple: true
+      - name: Versão no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.versao && format('v{0}', github.event.inputs.versao) || github.ref_name }}
+          name: Autor Total Escrita ${{ github.event.inputs.versao || github.ref_name }}
+          files: saida/*
+          make_latest: true

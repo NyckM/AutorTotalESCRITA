@@ -511,6 +511,12 @@ impl WordApp {
     pub(crate) fn ui_command(&mut self, id: &str, p: &Value) -> Option<Result<Value, String>> {
         let s = |k: &str| p.get(k).and_then(Value::as_str);
         Some(Ok(match id {
+            "ui.rascunhoLevar" => {
+                return Some(crate::rascunho::levar(self).map(|_| Value::Null));
+            }
+            "ui.rascunhoDevolver" => {
+                return Some(crate::rascunho::devolver(self).map(|_| Value::Null));
+            }
             "ui.checkForUpdates" | "help.checkForUpdates" => {
                 crate::updates_ui::check(self);
                 Value::Null

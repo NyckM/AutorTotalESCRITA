@@ -102,6 +102,12 @@ impl WordApp {
             if moved(self) {
                 return;
             }
+            // Autor Total Escrita: num rascunho, a faixa com Devolver ao texto.
+            if crate::rascunho::deste(self).is_some() {
+                egui::Panel::top("at_rascunho").show_separator_line(false).frame(egui::Frame::NONE).show(ui, |ui| {
+                    crate::rascunho::faixa(self, ui);
+                });
+            }
             let fill = if screen == chrome::Screen::Focus { chrome::FOCUS_CANVAS } else { t.canvas };
             egui::CentralPanel::default().frame(egui::Frame::NONE.fill(fill)).show(ui, |ui| {
                 canvas::show(self, ui);

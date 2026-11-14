@@ -56,6 +56,7 @@ pub(crate) mod language_packs;
 mod local_time;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod mentor;
+pub mod rascunho;
 pub mod mini_toolbar;
 pub mod objects;
 pub mod options;

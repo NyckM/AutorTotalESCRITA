@@ -124,6 +124,21 @@ pub(super) fn context_menu(app: &mut WordApp, ui: &mut Ui) {
     item(ui, app, "Paragraph…", "ui.dialog", json!({"name": "paragraph"}));
     item(ui, app, "Link…", "ui.dialog", json!({"name": "link"}));
     item(ui, app, "New Comment", "review.newComment", json!({}));
+    // Autor Total Escrita: o Rascunho, como na Escrita online.
+    ui.separator();
+    if crate::rascunho::deste(app).is_some() {
+        if ui.add(crate::rtl::menu_item(ui, "↩ Devolver ao texto", "", 0.0)).clicked() {
+            if let Err(e) = crate::rascunho::devolver(app) {
+                app.status(e);
+            }
+            ui.close();
+        }
+    } else if ui.add(crate::rtl::menu_item(ui, "Levar para o Rascunho", "", 0.0)).on_hover_text("Leva o trecho selecionado (ou o parágrafo) para uma página à parte, para lapidar e devolver depois").clicked() {
+        if let Err(e) = crate::rascunho::levar(app) {
+            app.status(e);
+        }
+        ui.close();
+    }
     if !wordcraft_engine::cmd::fields::selected(&app.session).is_empty() {
         ui.separator();
         item(ui, app, tl!("Update Field"), "references.updateFields", json!({}));

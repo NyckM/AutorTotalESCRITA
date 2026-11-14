@@ -368,7 +368,7 @@ pub fn tn(n: u64, one: &str, other: &str) -> String {
         return I18N.trn(craft_i18n::Lang::PSEUDO, n, one, other);
     }
     let lang = current();
-    lang.i18n().trn(lang.lang, n, one, other)
+    lang.i18n().trn(lang.lang, n, one, other).replace("WordCraft", NOME_DO_APP)
 }
 
 /// `s` in the current language as worded for `context` (`preview`, `template`), falling back to
@@ -383,7 +383,7 @@ pub fn trc<'a>(lang: Lang, context: &str, s: &'a str) -> &'a str {
     if pseudo::on() {
         return I18N.tc(craft_i18n::Lang::PSEUDO, context, s);
     }
-    lang.i18n().tc(lang.lang, context, s)
+    marca(lang.i18n().tc(lang.lang, context, s))
 }
 
 /// `s`'s translation for `context` in the current language, with no fallback to the plain row
@@ -423,7 +423,31 @@ pub fn tr(lang: Lang, s: &str) -> &str {
     if pseudo::on() {
         return I18N.t(craft_i18n::Lang::PSEUDO, s);
     }
-    lang.i18n().t(lang.lang, s)
+    marca(lang.i18n().t(lang.lang, s))
+}
+
+/// O nome do programa que aparece para a pessoa: as traduções vêm do WordCraft, base do Autor
+/// Total Escrita, e o nome dele não aparece na interface.
+pub const NOME_DO_APP: &str = "Autor Total Escrita";
+
+/// `s` com "WordCraft" trocado pelo nome do Autor Total Escrita. Cada texto diferente é trocado
+/// uma vez e guardado (são poucos, todos da interface).
+pub fn marca(s: &str) -> &str {
+    if !s.contains("WordCraft") {
+        return s;
+    }
+    static TROCADOS: std::sync::OnceLock<std::sync::Mutex<std::collections::HashMap<String, &'static str>>> = std::sync::OnceLock::new();
+    let mapa = TROCADOS.get_or_init(Default::default);
+    let mut m = mapa.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some(v) = m.get(s) {
+        return v;
+    }
+    if m.len() > 4096 {
+        return s;
+    }
+    let novo: &'static str = Box::leak(s.replace("WordCraft User", "Autor").replace("WordCraft", NOME_DO_APP).into_boxed_str());
+    m.insert(s.to_string(), novo);
+    novo
 }
 
 /// Left-to-right mark: it keeps what it touches from joining a right-to-left run next to it.

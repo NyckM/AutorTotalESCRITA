@@ -55,15 +55,9 @@ fn back_chevron_c(band_min_x: f32, center_y: f32, fullscreen: bool, content_left
     pos2(band_min_x + x, center_y)
 }
 
-/// The bottom of the backstage menu: About, and the community link unless the user turned the
-/// community button off — the title bar pill honors the same setting, so the menu hides the
-/// link with it.
-fn bottom_links(app: &WordApp) -> Vec<(&'static str, &'static str)> {
-    let mut links = vec![("About", "about")];
-    if app.ui.show_discord {
-        links.push(("Discord community", "discord"));
-    }
-    links
+/// The bottom of the backstage menu: About. (O link da comunidade do WordCraft saiu do Autor Total Escrita.)
+fn bottom_links(_app: &WordApp) -> Vec<(&'static str, &'static str)> {
+    vec![("About", "about")]
 }
 
 /// Draws the Backstage side menu and the active page. Without a document only the Home, New, Open

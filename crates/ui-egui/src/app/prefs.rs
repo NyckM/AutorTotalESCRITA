@@ -51,7 +51,8 @@ impl WordApp {
         if let Some(author) = self.ui.author.take()
             && (author.is_empty() || !author.trim().is_empty())
         {
-            self.session.author = author;
+            // Preferências antigas do WordCraft guardavam "WordCraft User" (iniciais WU).
+            self.session.author = if author.trim() == "WordCraft User" { "Autor".to_string() } else { author };
         }
         self.session.initials = std::mem::take(&mut self.ui.initials).chars().take(wordcraft_engine::cmd::options::MAX_INITIALS_CHARS).collect();
         for w in std::mem::take(&mut self.ui.dictionary).iter().take(MAX_DICTIONARY) {

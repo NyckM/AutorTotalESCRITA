@@ -16,16 +16,6 @@ do documento.
 Os instaladores ficam na página [Releases](../../releases) deste repositório e em
 https://autortotal.com.br/instalar.html.
 
-## Compilar
-
-Pela aba **Actions › Autor Total Escrita › Run workflow** (gera o instalador do Windows, o .dmg do Mac e o pacote
-do Linux e publica uma versão). Localmente: `cargo build --release -p wordcraft` com `CRAFT_I18N_DIR` apontando
-para o [craft-i18n](https://github.com/storytold/craft-i18n) na revisão de `craft-i18n.rev` (sem ele a interface
-fica só em inglês).
-
-O Mentor está em `crates/ui-egui/src/mentor.rs`. O programa só guarda neste computador o token de sessão da
-pessoa (pasta AutorTotalEscrita nas configurações do usuário); nenhuma chave secreta fica no código.
-
 ## Licença e créditos
 
 Baseado no [WordCraft](https://github.com/storytold/wordcraft) (MIT ou Apache-2.0, à sua escolha), dos autores do
